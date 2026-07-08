@@ -1,0 +1,13 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: jantong-resort:latest
+    container_name: jantong-resort-web
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+    restart: unless-stopped

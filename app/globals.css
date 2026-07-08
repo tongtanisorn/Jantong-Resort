@@ -1,0 +1,9 @@
+@import "../assets/css/styles.css";
+
+.success-text {
+  color: #1d5d3b;
+}
+
+.warning-text {
+  color: #8b3f18;
+}
