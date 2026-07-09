@@ -14,7 +14,7 @@ export const metadata = {
   openGraph: {
     title: "Jantong Resort",
     description: "รีสอร์ทบรรยากาศธรรมชาติ พร้อมระบบจองห้องพักออนไลน์",
-    images: ["/assets/images/hero-resort.png"],
+    images: ["/assets/images/resort-lawn-hero.jpg"],
     type: "website"
   },
   robots: {

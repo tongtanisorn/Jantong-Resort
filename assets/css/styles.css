@@ -643,7 +643,7 @@ textarea {
   align-items: center;
   padding: 96px clamp(18px, 5vw, 72px) 42px;
   color: var(--white);
-  background: linear-gradient(90deg, rgba(18, 31, 24, 0.9), rgba(36, 77, 61, 0.5)), url("/assets/images/hero-resort.png") center/cover;
+  background: linear-gradient(90deg, rgba(18, 31, 24, 0.9), rgba(36, 77, 61, 0.5)), url("/assets/images/resort-lawn-hero.jpg") center/cover;
 }
 
 .auth-brand {
@@ -767,7 +767,7 @@ textarea {
   display: grid;
   place-items: center;
   padding: 28px;
-  background: linear-gradient(120deg, rgba(36, 77, 61, 0.9), rgba(183, 111, 69, 0.62)), url("/assets/images/hero-resort.png") center/cover;
+  background: linear-gradient(120deg, rgba(36, 77, 61, 0.9), rgba(183, 111, 69, 0.62)), url("/assets/images/resort-lawn-hero.jpg") center/cover;
 }
 
 .admin-brand {

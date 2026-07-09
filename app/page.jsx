@@ -206,7 +206,7 @@ export default function HomePage() {
 
       <main id="home">
         <section className="hero" aria-label="Jantong Resort">
-          <img src="/assets/images/hero-resort.png" alt="บรรยากาศ Jantong Resort ท่ามกลางสวนธรรมชาติ" className="hero-image" />
+          <img src="/assets/images/resort-lawn-hero.jpg" alt="บรรยากาศสนามหญ้าและบ้านพักของ Jantong Resort" className="hero-image" />
           <div className="hero-shade" />
           <div className="hero-content">
             <p className="eyebrow">รีสอร์ทธรรมชาติสำหรับวันพักผ่อน</p>
@@ -328,7 +328,7 @@ export default function HomePage() {
         <section className="section muted" id="gallery">
           <div className="section-heading"><p className="eyebrow">บรรยากาศ</p><h2>พื้นที่พักผ่อนที่ถ่ายรูปได้ทุกมุม</h2></div>
           <div className="gallery-grid">
-            <img src="/assets/images/hero-resort.png" alt="วิวรีสอร์ทและสวน" />
+            <img src="/assets/images/resort-lawn-hero.jpg" alt="วิวสนามหญ้าและบ้านพักในสวน" />
             <img src="/assets/images/jantong-bungalows.jpg" alt="บ้านพักค้างคืนในสวน" />
             <img src="/assets/images/garden-room.png" alt="ห้องพักรีสอร์ท" />
           </div>
