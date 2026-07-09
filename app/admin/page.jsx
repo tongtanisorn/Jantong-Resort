@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { getBookingsFromSupabase, isSupabaseConfigured, updateBookingInSupabase } from "../../lib/supabaseClient";
 
 const STORAGE_KEY = "jantongBookings";
 const SESSION_KEY = "jantongAdminSession";
 
 const sampleBookings = [
-  { id: "sample-1", guestName: "คุณมะลิ", phone: "081-234-5678", checkIn: "2026-07-18", checkOut: "2026-07-20", roomType: "Garden Deluxe", guests: 2, addOns: ["กาแฟ"], note: "ขอห้องวิวสวน", depositAmount: 500, depositStatus: "verified", bookingStatus: "confirmed", createdAt: "2026-07-06T09:30:00.000Z" },
-  { id: "sample-2", guestName: "คุณอาทิตย์", phone: "089-222-1111", checkIn: "2026-07-22", checkOut: "2026-07-23", roomType: "Family Bungalow", guests: 4, addOns: ["เตียงเสริม"], note: "จะโอนมัดจำช่วงเย็น", depositAmount: 1000, depositStatus: "pending", bookingStatus: "new", createdAt: "2026-07-07T12:15:00.000Z" },
-  { id: "sample-3", guestName: "คุณกานต์", phone: "086-555-5555", checkIn: "2026-07-25", checkOut: "2026-07-27", roomType: "Standard Twin", guests: 2, addOns: ["กาแฟ"], note: "ส่งสลิปทาง LINE แล้ว", depositAmount: 500, depositStatus: "paid", bookingStatus: "awaiting_review", createdAt: "2026-07-08T08:45:00.000Z" }
+  { id: "sample-1", guestName: "คุณมะลิ", phone: "081-234-5678", checkIn: "2026-07-18", checkOut: "2026-07-18", roomType: "เรือนแถว ห้อง 7", guests: 2, addOns: [], note: "พักชั่วคราว 3 ชั่วโมง", depositAmount: 250, depositStatus: "verified", bookingStatus: "confirmed", createdAt: "2026-07-06T09:30:00.000Z" },
+  { id: "sample-2", guestName: "คุณอาทิตย์", phone: "089-222-1111", checkIn: "2026-07-22", checkOut: "2026-07-23", roomType: "บ้านพักหลังที่ 1", guests: 2, addOns: ["กาแฟ"], note: "เข้าพักค้างคืน", depositAmount: 600, depositStatus: "pending", bookingStatus: "new", createdAt: "2026-07-07T12:15:00.000Z" },
+  { id: "sample-3", guestName: "คุณกานต์", phone: "086-555-5555", checkIn: "2026-07-25", checkOut: "2026-07-26", roomType: "บ้านพักหลังที่ 4", guests: 2, addOns: ["กาแฟ"], note: "ส่งสลิปทาง LINE แล้ว", depositAmount: 700, depositStatus: "paid", bookingStatus: "awaiting_review", createdAt: "2026-07-08T08:45:00.000Z" }
 ];
 
 const labels = {
@@ -30,6 +31,14 @@ function readBookings() {
   return sampleBookings;
 }
 
+async function loadBookings() {
+  if (isSupabaseConfigured()) {
+    const { data, error } = await getBookingsFromSupabase();
+    if (!error) return data;
+  }
+  return readBookings();
+}
+
 function formatDate(date) {
   return new Intl.DateTimeFormat("th-TH", { year: "numeric", month: "short", day: "numeric" }).format(new Date(date));
 }
@@ -47,9 +56,13 @@ export default function AdminPage() {
   const [depositFilter, setDepositFilter] = useState("all");
 
   useEffect(() => {
-    setBookings(readBookings());
-    setIsLoggedIn(sessionStorage.getItem(SESSION_KEY) === "active");
-    setIsReady(true);
+    async function bootAdmin() {
+      setBookings(await loadBookings());
+      setIsLoggedIn(sessionStorage.getItem(SESSION_KEY) === "active");
+      setIsReady(true);
+    }
+
+    bootAdmin();
   }, []);
 
   const filteredBookings = useMemo(() => {
@@ -93,16 +106,22 @@ export default function AdminPage() {
     setIsLoggedIn(false);
   }
 
-  function updateBooking(id, field, value) {
+  async function updateBooking(id, field, value) {
+    const previousBookings = bookings;
     setBookings((current) => {
       const nextBookings = current.map((booking) => (booking.id === id ? { ...booking, [field]: value } : booking));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(nextBookings));
       return nextBookings;
     });
+
+    if (isSupabaseConfigured()) {
+      const { error } = await updateBookingInSupabase(id, { [field]: value });
+      if (error) setBookings(previousBookings);
+    }
   }
 
   function exportCsv() {
-    const header = ["guestName", "phone", "checkIn", "checkOut", "roomType", "guests", "addOns", "depositAmount", "depositStatus", "bookingStatus", "note"];
+    const header = ["guestName", "phone", "checkIn", "checkOut", "roomType", "guests", "addOns", "depositAmount", "depositStatus", "bookingStatus", "slipName", "slipUploadedAt", "note"];
     const csv = [
       header.join(","),
       ...filteredBookings.map((booking) =>
@@ -181,7 +200,12 @@ export default function AdminPage() {
                       <td><strong>{formatDate(booking.checkIn)}</strong><div className="muted-text">ถึง {formatDate(booking.checkOut)}</div></td>
                       <td>{booking.roomType}</td>
                       <td>{booking.addOns?.length ? booking.addOns.join(", ") : "-"}</td>
-                      <td><span className={`status-pill status-${booking.depositStatus}`}>{labels[booking.depositStatus]}</span><div className="muted-text">{currency(booking.depositAmount)}</div><StatusSelect options={["pending", "paid", "verified"]} value={booking.depositStatus} onChange={(value) => updateBooking(booking.id, "depositStatus", value)} /></td>
+                      <td>
+                        <span className={`status-pill status-${booking.depositStatus}`}>{labels[booking.depositStatus]}</span>
+                        <div className="muted-text">{currency(booking.depositAmount)}</div>
+                        {booking.slipDataUrl ? <a className="slip-link" href={booking.slipDataUrl} target="_blank" rel="noreferrer">ดูสลิป</a> : <div className="muted-text">ยังไม่มีสลิป</div>}
+                        <StatusSelect options={["pending", "paid", "verified"]} value={booking.depositStatus} onChange={(value) => updateBooking(booking.id, "depositStatus", value)} />
+                      </td>
                       <td><span className={`status-pill ${booking.bookingStatus === "cancelled" ? "status-cancelled" : "status-verified"}`}>{labels[booking.bookingStatus]}</span><StatusSelect options={["new", "awaiting_review", "confirmed", "checked_in", "cancelled"]} value={booking.bookingStatus} onChange={(value) => updateBooking(booking.id, "bookingStatus", value)} /></td>
                       <td>{booking.note || "-"}</td>
                     </tr>
@@ -193,9 +217,9 @@ export default function AdminPage() {
             <section className="room-admin" id="rooms">
               <div className="section-heading compact"><p className="eyebrow">Rooms</p><h2>ข้อมูลห้องพักเบื้องต้น</h2></div>
               <div className="room-stock-grid">
-                <article><strong>Garden Deluxe</strong><span>4 ห้อง</span><small>฿1,490 / คืน</small></article>
-                <article><strong>Family Bungalow</strong><span>2 หลัง</span><small>฿2,490 / คืน</small></article>
-                <article><strong>Standard Twin</strong><span>6 ห้อง</span><small>฿1,190 / คืน</small></article>
+                <article><strong>เรือนแถว ห้อง 7-10</strong><span>4 ห้อง</span><small>฿250 / 3 ชม.</small></article>
+                <article><strong>บ้านพักหลังที่ 1-2</strong><span>2 หลัง</span><small>฿600 / คืน</small></article>
+                <article><strong>บ้านพักหลังที่ 3-4</strong><span>2 หลัง</span><small>฿700 / คืน</small></article>
               </div>
             </section>
           </section>

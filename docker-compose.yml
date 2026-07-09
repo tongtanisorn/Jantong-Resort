@@ -3,6 +3,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SITE_URL: "${NEXT_PUBLIC_SITE_URL:-http://localhost:3001}"
+        NEXT_PUBLIC_SUPABASE_URL: "${NEXT_PUBLIC_SUPABASE_URL:-https://wmkbeitnxziduhtnhdfq.supabase.co}"
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: "${NEXT_PUBLIC_SUPABASE_ANON_KEY:-sb_publishable_d1i5v8pvn7b472gCoRgVgg_Eje4G3EC}"
     image: jantong-resort:latest
     container_name: jantong-resort-web
     ports:
@@ -10,4 +14,8 @@ services:
     environment:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: "1"
+      PROMPTPAY_ID: "${PROMPTPAY_ID:-0927670303}"
+      NEXT_PUBLIC_SITE_URL: "${NEXT_PUBLIC_SITE_URL:-http://localhost:3001}"
+      NEXT_PUBLIC_SUPABASE_URL: "${NEXT_PUBLIC_SUPABASE_URL:-https://wmkbeitnxziduhtnhdfq.supabase.co}"
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "${NEXT_PUBLIC_SUPABASE_ANON_KEY:-sb_publishable_d1i5v8pvn7b472gCoRgVgg_Eje4G3EC}"
     restart: unless-stopped

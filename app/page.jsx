@@ -2,16 +2,22 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { createBookingInSupabase, isSupabaseConfigured, updateBookingInSupabase } from "../lib/supabaseClient";
 
 const STORAGE_KEY = "jantongBookings";
 const GOOGLE_MAPS_URL = "https://maps.app.goo.gl/8tovafGTeeYNSVyF9";
 const GOOGLE_MAPS_EMBED_URL = "https://www.google.com/maps?q=%E0%B8%88%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%A3%E0%B9%8C%E0%B8%97%E0%B8%AD%E0%B8%87%E0%B8%A3%E0%B8%B5%E0%B8%AA%E0%B8%AD%E0%B8%A3%E0%B9%8C%E0%B8%97&output=embed";
 
-const roomDeposits = {
-  "Garden Deluxe": 500,
-  "Family Bungalow": 1000,
-  "Standard Twin": 500
-};
+const roomOptions = [
+  { stayType: "temporary", label: "เรือนแถว ห้อง 7", price: 250, rateLabel: "250 บาท / 3 ชม." },
+  { stayType: "temporary", label: "เรือนแถว ห้อง 8", price: 250, rateLabel: "250 บาท / 3 ชม." },
+  { stayType: "temporary", label: "เรือนแถว ห้อง 9", price: 250, rateLabel: "250 บาท / 3 ชม." },
+  { stayType: "temporary", label: "เรือนแถว ห้อง 10", price: 250, rateLabel: "250 บาท / 3 ชม." },
+  { stayType: "overnight", label: "บ้านพักหลังที่ 1", price: 600, rateLabel: "600 บาท / คืน" },
+  { stayType: "overnight", label: "บ้านพักหลังที่ 2", price: 600, rateLabel: "600 บาท / คืน" },
+  { stayType: "overnight", label: "บ้านพักหลังที่ 3", price: 700, rateLabel: "700 บาท / คืน" },
+  { stayType: "overnight", label: "บ้านพักหลังที่ 4", price: 700, rateLabel: "700 บาท / คืน" }
+];
 
 const addOnOptions = [
   "เตียงเสริม",
@@ -21,6 +27,7 @@ const addOnOptions = [
 const initialForm = {
   guestName: "",
   phone: "",
+  stayType: "overnight",
   checkIn: "",
   checkOut: "",
   roomType: "",
@@ -39,6 +46,11 @@ function saveBookings(bookings) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(bookings));
 }
 
+function updateLocalBooking(id, changes) {
+  const nextBookings = getBookings().map((booking) => (booking.id === id ? { ...booking, ...changes } : booking));
+  saveBookings(nextBookings);
+}
+
 function formatDate(date) {
   return new Intl.DateTimeFormat("th-TH", {
     year: "numeric",
@@ -52,10 +64,19 @@ export default function HomePage() {
   const [form, setForm] = useState(initialForm);
   const [status, setStatus] = useState("");
   const [statusTone, setStatusTone] = useState("success");
+  const [payment, setPayment] = useState(null);
+  const [slipStatus, setSlipStatus] = useState("");
+  const availableRooms = roomOptions.filter((room) => room.stayType === form.stayType);
+  const selectedRoom = roomOptions.find((room) => room.label === form.roomType);
 
   function updateForm(event) {
     const { name, value } = event.target;
-    setForm((current) => ({ ...current, [name]: value }));
+    setForm((current) => ({
+      ...current,
+      [name]: value,
+      roomType: name === "stayType" ? "" : name === "roomType" ? value : current.roomType,
+      checkOut: name === "stayType" && value === "temporary" ? "" : current.checkOut
+    }));
   }
 
   function toggleAddOn(event) {
@@ -68,10 +89,10 @@ export default function HomePage() {
     });
   }
 
-  function submitBooking(event) {
+  async function submitBooking(event) {
     event.preventDefault();
 
-    if (new Date(form.checkOut) <= new Date(form.checkIn)) {
+    if (form.stayType === "overnight" && new Date(form.checkOut) <= new Date(form.checkIn)) {
       setStatus("กรุณาเลือกวันออกหลังวันเข้าพัก");
       setStatusTone("warning");
       return;
@@ -82,21 +103,76 @@ export default function HomePage() {
       guestName: form.guestName.trim(),
       phone: form.phone.trim(),
       checkIn: form.checkIn,
-      checkOut: form.checkOut,
+      checkOut: form.stayType === "temporary" ? form.checkIn : form.checkOut,
       roomType: form.roomType,
       guests: Number(form.guests),
       addOns: form.addOns,
       note: form.note.trim(),
-      depositAmount: roomDeposits[form.roomType] || 500,
+      depositAmount: selectedRoom?.price || 250,
       depositStatus: "pending",
       bookingStatus: "new",
       createdAt: new Date().toISOString()
     };
 
-    saveBookings([booking, ...getBookings()]);
+    if (isSupabaseConfigured()) {
+      const { error } = await createBookingInSupabase(booking);
+      if (error) saveBookings([booking, ...getBookings()]);
+    } else {
+      saveBookings([booking, ...getBookings()]);
+    }
+
     setForm(initialForm);
-    setStatus(`ส่งคำขอจอง ${booking.roomType} วันที่ ${formatDate(booking.checkIn)} เรียบร้อยแล้ว`);
-    setStatusTone("success");
+    setSlipStatus("");
+
+    try {
+      const response = await fetch("/api/deposit-qr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingId: booking.id, amount: booking.depositAmount })
+      });
+
+      if (!response.ok) throw new Error("Unable to create deposit QR");
+
+      const qr = await response.json();
+      setPayment({ ...qr, roomType: booking.roomType, checkIn: booking.checkIn });
+      setStatus(`ส่งคำขอจอง ${booking.roomType} วันที่ ${formatDate(booking.checkIn)} เรียบร้อยแล้ว กรุณาสแกน QR เพื่อชำระมัดจำ`);
+      setStatusTone("success");
+    } catch {
+      setPayment(null);
+      setStatus("ส่งคำขอจองเรียบร้อยแล้ว แต่ยังสร้าง QR มัดจำไม่ได้ กรุณาติดต่อรีสอร์ทเพื่อขอช่องทางโอนเงิน");
+      setStatusTone("warning");
+    }
+  }
+
+  function uploadSlip(event) {
+    const file = event.target.files?.[0];
+    if (!file || !payment) return;
+
+    if (!file.type.startsWith("image/")) {
+      setSlipStatus("กรุณาอัปโหลดไฟล์รูปภาพสลิปเท่านั้น");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const changes = {
+        depositStatus: "paid",
+        bookingStatus: "awaiting_review",
+        slipName: file.name,
+        slipDataUrl: reader.result,
+        slipUploadedAt: new Date().toISOString()
+      };
+
+      if (isSupabaseConfigured()) {
+        const { error } = await updateBookingInSupabase(payment.bookingId, changes);
+        if (error) updateLocalBooking(payment.bookingId, changes);
+      } else {
+        updateLocalBooking(payment.bookingId, changes);
+      }
+
+      setSlipStatus("อัปโหลดสลิปเรียบร้อยแล้ว เจ้าของจะตรวจสอบและยืนยันการจอง");
+    };
+    reader.readAsDataURL(file);
   }
 
   return (
@@ -121,6 +197,7 @@ export default function HomePage() {
           <a href="#booking">จองห้อง</a>
           <a href="#gallery">แกลเลอรี</a>
           <a href="#contact">ติดต่อ</a>
+          <Link href="/login">เข้าสู่ระบบ</Link>
           <Link className="nav-admin" href="/admin">
             Admin
           </Link>
@@ -143,8 +220,8 @@ export default function HomePage() {
         </section>
 
         <section className="trust-band" aria-label="ข้อมูลเด่น">
-          <div><strong>24 ชม.</strong><span>รับคำขอจองออนไลน์</span></div>
-          <div><strong>3 แบบ</strong><span>ห้องพักให้เลือก</span></div>
+          <div><strong>250</strong><span>ชั่วคราว 3 ชั่วโมง</span></div>
+          <div><strong>4 หลัง</strong><span>บ้านพักค้างคืน</span></div>
           <div><strong>LINE</strong><span>ยืนยันการโอนรวดเร็ว</span></div>
         </section>
 
@@ -166,17 +243,17 @@ export default function HomePage() {
             <h2>เลือกห้องที่เหมาะกับทริปของคุณ</h2>
           </div>
           <div className="room-grid">
-            <RoomCard image="/assets/images/garden-room.png" alt="ห้อง Garden Deluxe พร้อมวิวสวน" title="Garden Deluxe" price="฿1,490" details={["พักได้ 2 ท่าน", "Wi-Fi, แอร์, ทีวี, น้ำอุ่น", "มัดจำเริ่มต้น ฿500"]}>
-              เตียงใหญ่ วิวสวน เงียบสงบ เหมาะกับคู่รักหรือพักผ่อนส่วนตัว
+            <RoomCard image="/assets/images/garden-room.png" alt="ห้องเรือนแถวสำหรับพักชั่วคราว" title="เรือนแถว ห้อง 7-10" price="฿250 / 3 ชม." details={["มี 4 ห้อง: 7, 8, 9, 10", "เหมาะกับพักชั่วคราว", "ชำระผ่าน QR ได้"]}>
+              ห้องพักแบบเรือนแถวสำหรับลูกค้าที่ต้องการพักชั่วคราว ใช้งานง่าย จองเป็นรายห้องได้
             </RoomCard>
-            <RoomCard image="/assets/images/family-bungalow.png" alt="บ้านพัก Family Bungalow ท่ามกลางสวน" title="Family Bungalow" price="฿2,490" details={["พักได้ 4 ท่าน", "ระเบียงส่วนตัวและที่จอดรถ", "มัดจำเริ่มต้น ฿1,000"]}>
-              บ้านพักส่วนตัวพร้อมระเบียง เหมาะกับครอบครัวและกลุ่มเพื่อน
+            <RoomCard image="/assets/images/jantong-bungalows.jpg" alt="บ้านพักค้างคืนของจันทร์ทองรีสอร์ท" title="บ้านพักหลังที่ 1-2" price="฿600 / คืน" details={["บ้านเป็นหลัง", "ระเบียงส่วนตัว", "เหมาะกับพักค้างคืน"]}>
+              บ้านพักเป็นหลังแบบในรูป บรรยากาศสวน เงียบสงบ เหมาะสำหรับลูกค้าค้างคืน
             </RoomCard>
             <article className="room-card text-room">
               <div className="room-body">
-                <div className="room-title-row"><h3>Standard Twin</h3><span>฿1,190</span></div>
-                <p>ห้องเตียงคู่ขนาดกะทัดรัด ใช้งานง่าย เหมาะกับทริปทำงานหรือแวะพักระยะสั้น</p>
-                <ul><li>พักได้ 2 ท่าน</li><li>เช็กอิน 14:00 / เช็กเอาต์ 12:00</li><li>สั่งกาแฟตอนเช้าได้</li></ul>
+                <div className="room-title-row"><h3>บ้านพักหลังที่ 3-4</h3><span>฿700 / คืน</span></div>
+                <p>บ้านพักค้างคืนราคามาตรฐาน สำหรับลูกค้าที่ต้องการพักผ่อนในรีสอร์ทแบบเป็นส่วนตัว</p>
+                <ul><li>บ้านเป็นหลัง 2 หลัง</li><li>ราคา 700 บาทต่อคืน</li><li>สั่งกาแฟตอนเช้าได้</li></ul>
               </div>
             </article>
           </div>
@@ -188,8 +265,8 @@ export default function HomePage() {
             <h2>เพิ่มรายได้ด้วยบริการที่ลูกค้าจองพร้อมห้องพักได้</h2>
           </div>
           <div className="service-grid">
-            <ServiceCard title="เตียงเสริม" price="฿400 / คืน" detail="รองรับครอบครัวหรือกลุ่มเพื่อนที่ต้องการพักห้องเดียวกัน" />
-            <ServiceCard title="กาแฟในตอนเช้า" price="สอบถามราคา" detail="กาแฟร้อนหรือเย็นสำหรับลูกค้าที่ต้องการเริ่มเช้าวันพักผ่อนแบบสบาย ๆ" />
+            <ServiceCard title="เตียงเสริม" price="฿200 / ชุด" detail="เหมาะสำหรับลูกค้าที่ต้องการเพิ่มที่นอนในห้องเดียวกัน" />
+            <ServiceCard title="กาแฟ" price="ฟรี" detail="บริการกาแฟในตอนเช้าสำหรับลูกค้าที่เข้าพัก" />
           </div>
         </section>
 
@@ -197,18 +274,23 @@ export default function HomePage() {
           <div className="booking-copy">
             <p className="eyebrow">จองห้องพัก</p>
             <h2>ส่งคำขอจองให้รีสอร์ทตรวจสอบ</h2>
-            <p>เมื่อส่งคำขอแล้ว ข้อมูลจะเข้าไปที่หลังบ้าน เจ้าของสามารถดูสถานะและอัปเดตการมัดจำได้ทันทีในหน้า admin</p>
-            <div className="policy-list"><span>มัดจำเพื่อยืนยันห้อง</span><span>รองรับอัปโหลดสลิปในเวอร์ชันถัดไป</span><span>เชื่อม LINE แจ้งเตือนได้ภายหลัง</span></div>
+            <p>เลือกได้ทั้งพักชั่วคราว 3 ชั่วโมง และพักค้างคืน ข้อมูลจะเข้าไปที่หลังบ้านให้เจ้าของตรวจสอบทันที</p>
+            <div className="policy-list"><span>ชั่วคราว 250 บาท / 3 ชม.</span><span>ค้างคืน 600-700 บาท / คืน</span><span>เชื่อม LINE แจ้งเตือนได้ภายหลัง</span></div>
           </div>
           <form className="booking-form" onSubmit={submitBooking}>
             <label>ชื่อผู้จอง<input type="text" name="guestName" value={form.guestName} onChange={updateForm} required placeholder="เช่น คุณต้น" /></label>
             <label>เบอร์โทร / LINE<input type="tel" name="phone" value={form.phone} onChange={updateForm} required placeholder="08x-xxx-xxxx" /></label>
+            <label>รูปแบบการพัก<select name="stayType" value={form.stayType} onChange={updateForm} required><option value="overnight">ค้างคืน</option><option value="temporary">ชั่วคราว 3 ชั่วโมง</option></select></label>
             <div className="form-row">
-              <label>วันเข้าพัก<input type="date" name="checkIn" value={form.checkIn} onChange={updateForm} required /></label>
-              <label>วันออก<input type="date" name="checkOut" value={form.checkOut} onChange={updateForm} required /></label>
+              <label>{form.stayType === "temporary" ? "วันที่ใช้ห้อง" : "วันเข้าพัก"}<input type="date" name="checkIn" value={form.checkIn} onChange={updateForm} required /></label>
+              {form.stayType === "overnight" ? (
+                <label>วันออก<input type="date" name="checkOut" value={form.checkOut} onChange={updateForm} required /></label>
+              ) : (
+                <label>ระยะเวลา<input type="text" value="3 ชั่วโมง" readOnly /></label>
+              )}
             </div>
             <div className="form-row">
-              <label>ห้องพัก<select name="roomType" value={form.roomType} onChange={updateForm} required><option value="">เลือกห้อง</option><option>Garden Deluxe</option><option>Family Bungalow</option><option>Standard Twin</option></select></label>
+              <label>ห้องพัก<select name="roomType" value={form.roomType} onChange={updateForm} required><option value="">เลือกห้อง</option>{availableRooms.map((room) => <option value={room.label} key={room.label}>{room.label} - {room.rateLabel}</option>)}</select></label>
               <label>จำนวนผู้เข้าพัก<input type="number" name="guests" min="1" max="12" value={form.guests} onChange={updateForm} required /></label>
             </div>
             <fieldset className="addon-fieldset">
@@ -225,6 +307,21 @@ export default function HomePage() {
             <label>หมายเหตุ<textarea name="note" rows="4" value={form.note} onChange={updateForm} placeholder="เช่น ขอห้องติดกัน / มีเด็กเล็ก / เข้าพักดึก" /></label>
             <button className="button primary full" type="submit">ส่งคำขอจอง</button>
             <p className={`form-status ${statusTone === "warning" ? "warning-text" : "success-text"}`} role="status">{status}</p>
+            {payment ? (
+              <section className="deposit-panel" aria-label="ชำระค่ามัดจำ">
+                <div>
+                  <p className="eyebrow">ชำระค่ามัดจำ</p>
+                  <h3>สแกน QR เพื่อโอนมัดจำ {payment.amount.toLocaleString("th-TH")} บาท</h3>
+                  <p>หลังโอนแล้ว กรุณาอัปโหลดสลิป เพื่อให้เจ้าของตรวจสอบในหลังบ้าน</p>
+                </div>
+                <img src={payment.qrDataUrl} alt={`PromptPay QR มัดจำ ${payment.amount} บาท`} className="deposit-qr" />
+                <label className="slip-upload">
+                  อัปโหลดสลิปโอนเงิน
+                  <input type="file" accept="image/*" onChange={uploadSlip} />
+                </label>
+                <p className="form-status success-text" role="status">{slipStatus}</p>
+              </section>
+            ) : null}
           </form>
         </section>
 
@@ -232,8 +329,8 @@ export default function HomePage() {
           <div className="section-heading"><p className="eyebrow">บรรยากาศ</p><h2>พื้นที่พักผ่อนที่ถ่ายรูปได้ทุกมุม</h2></div>
           <div className="gallery-grid">
             <img src="/assets/images/hero-resort.png" alt="วิวรีสอร์ทและสวน" />
+            <img src="/assets/images/jantong-bungalows.jpg" alt="บ้านพักค้างคืนในสวน" />
             <img src="/assets/images/garden-room.png" alt="ห้องพักรีสอร์ท" />
-            <img src="/assets/images/family-bungalow.png" alt="บ้านพักในสวน" />
           </div>
         </section>
 
@@ -262,7 +359,10 @@ export default function HomePage() {
 
       <footer className="site-footer">
         <p>© 2026 Jantong Resort. All rights reserved.</p>
-        <Link href="/admin">Owner Login</Link>
+        <div className="footer-links">
+          <Link href="/login">Customer Login</Link>
+          <Link href="/admin">Owner Login</Link>
+        </div>
       </footer>
     </>
   );

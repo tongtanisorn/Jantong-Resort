@@ -1,7 +1,9 @@
 import "./globals.css";
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3001";
+
 export const metadata = {
-  metadataBase: new URL("https://jantongresort.com"),
+  metadataBase: new URL(siteUrl),
   title: {
     default: "Jantong Resort | ที่พักธรรมชาติ จองห้องพักออนไลน์",
     template: "%s | Jantong Resort"
