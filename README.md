@@ -16,7 +16,7 @@ npm install
 npm run dev
 ```
 
-เปิดเว็บที่ `http://localhost:3000`
+เปิดเว็บที่ `http://localhost:3001`
 
 โปรเจกต์นี้ใช้ `next dev --turbopack` และ `next build --turbopack` เพราะ path ของโฟลเดอร์มีเครื่องหมาย `!` ซึ่ง Webpack ของ Next บางรุ่นไม่รองรับใน path บน Windows
 
@@ -40,7 +40,7 @@ docker compose down
 
 ```powershell
 docker build -t jantong-resort .
-docker run --rm -p 3000:3000 jantong-resort
+docker run --rm -p 3001:3000 jantong-resort
 ```
 
 ## หลังบ้าน

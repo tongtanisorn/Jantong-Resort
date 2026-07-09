@@ -4,12 +4,19 @@ import Link from "next/link";
 import { useState } from "react";
 
 const STORAGE_KEY = "jantongBookings";
+const GOOGLE_MAPS_URL = "https://maps.app.goo.gl/8tovafGTeeYNSVyF9";
+const GOOGLE_MAPS_EMBED_URL = "https://www.google.com/maps?q=%E0%B8%88%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%A3%E0%B9%8C%E0%B8%97%E0%B8%AD%E0%B8%87%E0%B8%A3%E0%B8%B5%E0%B8%AA%E0%B8%AD%E0%B8%A3%E0%B9%8C%E0%B8%97&output=embed";
 
 const roomDeposits = {
   "Garden Deluxe": 500,
   "Family Bungalow": 1000,
   "Standard Twin": 500
 };
+
+const addOnOptions = [
+  "เตียงเสริม",
+  "กาแฟในตอนเช้า"
+];
 
 const initialForm = {
   guestName: "",
@@ -18,6 +25,7 @@ const initialForm = {
   checkOut: "",
   roomType: "",
   guests: 2,
+  addOns: [],
   note: ""
 };
 
@@ -50,6 +58,16 @@ export default function HomePage() {
     setForm((current) => ({ ...current, [name]: value }));
   }
 
+  function toggleAddOn(event) {
+    const { value, checked } = event.target;
+    setForm((current) => {
+      const addOns = checked
+        ? [...current.addOns, value]
+        : current.addOns.filter((addOn) => addOn !== value);
+      return { ...current, addOns };
+    });
+  }
+
   function submitBooking(event) {
     event.preventDefault();
 
@@ -67,6 +85,7 @@ export default function HomePage() {
       checkOut: form.checkOut,
       roomType: form.roomType,
       guests: Number(form.guests),
+      addOns: form.addOns,
       note: form.note.trim(),
       depositAmount: roomDeposits[form.roomType] || 500,
       depositStatus: "pending",
@@ -98,6 +117,7 @@ export default function HomePage() {
         </button>
         <nav className={`site-nav ${navOpen ? "open" : ""}`} aria-label="เมนูหลัก">
           <a href="#rooms">ห้องพัก</a>
+          <a href="#services">บริการเสริม</a>
           <a href="#booking">จองห้อง</a>
           <a href="#gallery">แกลเลอรี</a>
           <a href="#contact">ติดต่อ</a>
@@ -156,9 +176,20 @@ export default function HomePage() {
               <div className="room-body">
                 <div className="room-title-row"><h3>Standard Twin</h3><span>฿1,190</span></div>
                 <p>ห้องเตียงคู่ขนาดกะทัดรัด ใช้งานง่าย เหมาะกับทริปทำงานหรือแวะพักระยะสั้น</p>
-                <ul><li>พักได้ 2 ท่าน</li><li>เช็กอิน 14:00 / เช็กเอาต์ 12:00</li><li>เพิ่มอาหารเช้าได้</li></ul>
+                <ul><li>พักได้ 2 ท่าน</li><li>เช็กอิน 14:00 / เช็กเอาต์ 12:00</li><li>สั่งกาแฟตอนเช้าได้</li></ul>
               </div>
             </article>
+          </div>
+        </section>
+
+        <section className="section services-section" id="services">
+          <div className="section-heading">
+            <p className="eyebrow">บริการเสริม</p>
+            <h2>เพิ่มรายได้ด้วยบริการที่ลูกค้าจองพร้อมห้องพักได้</h2>
+          </div>
+          <div className="service-grid">
+            <ServiceCard title="เตียงเสริม" price="฿400 / คืน" detail="รองรับครอบครัวหรือกลุ่มเพื่อนที่ต้องการพักห้องเดียวกัน" />
+            <ServiceCard title="กาแฟในตอนเช้า" price="สอบถามราคา" detail="กาแฟร้อนหรือเย็นสำหรับลูกค้าที่ต้องการเริ่มเช้าวันพักผ่อนแบบสบาย ๆ" />
           </div>
         </section>
 
@@ -180,6 +211,17 @@ export default function HomePage() {
               <label>ห้องพัก<select name="roomType" value={form.roomType} onChange={updateForm} required><option value="">เลือกห้อง</option><option>Garden Deluxe</option><option>Family Bungalow</option><option>Standard Twin</option></select></label>
               <label>จำนวนผู้เข้าพัก<input type="number" name="guests" min="1" max="12" value={form.guests} onChange={updateForm} required /></label>
             </div>
+            <fieldset className="addon-fieldset">
+              <legend>บริการเสริมที่สนใจ</legend>
+              <div className="addon-grid">
+                {addOnOptions.map((addOn) => (
+                  <label className="addon-option" key={addOn}>
+                    <input type="checkbox" value={addOn} checked={form.addOns.includes(addOn)} onChange={toggleAddOn} />
+                    <span>{addOn}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
             <label>หมายเหตุ<textarea name="note" rows="4" value={form.note} onChange={updateForm} placeholder="เช่น ขอห้องติดกัน / มีเด็กเล็ก / เข้าพักดึก" /></label>
             <button className="button primary full" type="submit">ส่งคำขอจอง</button>
             <p className={`form-status ${statusTone === "warning" ? "warning-text" : "success-text"}`} role="status">{status}</p>
@@ -196,8 +238,25 @@ export default function HomePage() {
         </section>
 
         <section className="section contact-section" id="contact">
-          <div><p className="eyebrow">ติดต่อเรา</p><h2>สอบถามห้องว่างหรือขอใบเสนอราคา</h2><p>โทร: 086-080-1979</p><p>LINE: @jantongresort</p><p>Facebook: Jantong Resort</p></div>
-          <div className="map-card" aria-label="ตำแหน่งรีสอร์ท"><span>Google Maps</span><p>ใส่ลิงก์แผนที่จริงของรีสอร์ทที่นี่เมื่อต้องเผยแพร่เว็บไซต์</p></div>
+          <div>
+            <p className="eyebrow">ติดต่อเรา</p>
+            <h2>สอบถามห้องว่างหรือขอใบเสนอราคา</h2>
+            <p>โทร: 086-080-1979</p>
+            <p>LINE: @jantongresort</p>
+            <p>Facebook: Jantong Resort</p>
+            <a className="button primary map-link" href={GOOGLE_MAPS_URL} target="_blank" rel="noreferrer">
+              เปิดใน Google Maps
+            </a>
+          </div>
+          <div className="map-card" aria-label="ตำแหน่ง Jantong Resort">
+            <iframe
+              title="แผนที่ Jantong Resort"
+              src={GOOGLE_MAPS_EMBED_URL}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              allowFullScreen
+            />
+          </div>
         </section>
       </main>
 
@@ -218,6 +277,18 @@ function RoomCard({ image, alt, title, price, details, children }) {
         <p>{children}</p>
         <ul>{details.map((detail) => <li key={detail}>{detail}</li>)}</ul>
       </div>
+    </article>
+  );
+}
+
+function ServiceCard({ title, price, detail }) {
+  return (
+    <article className="service-card">
+      <div className="service-card-top">
+        <h3>{title}</h3>
+        <span>{price}</span>
+      </div>
+      <p>{detail}</p>
     </article>
   );
 }

@@ -7,9 +7,9 @@ const STORAGE_KEY = "jantongBookings";
 const SESSION_KEY = "jantongAdminSession";
 
 const sampleBookings = [
-  { id: "sample-1", guestName: "คุณมะลิ", phone: "081-234-5678", checkIn: "2026-07-18", checkOut: "2026-07-20", roomType: "Garden Deluxe", guests: 2, note: "ขอห้องวิวสวน", depositAmount: 500, depositStatus: "verified", bookingStatus: "confirmed", createdAt: "2026-07-06T09:30:00.000Z" },
-  { id: "sample-2", guestName: "คุณอาทิตย์", phone: "089-222-1111", checkIn: "2026-07-22", checkOut: "2026-07-23", roomType: "Family Bungalow", guests: 4, note: "จะโอนมัดจำช่วงเย็น", depositAmount: 1000, depositStatus: "pending", bookingStatus: "new", createdAt: "2026-07-07T12:15:00.000Z" },
-  { id: "sample-3", guestName: "คุณกานต์", phone: "086-555-5555", checkIn: "2026-07-25", checkOut: "2026-07-27", roomType: "Standard Twin", guests: 2, note: "ส่งสลิปทาง LINE แล้ว", depositAmount: 500, depositStatus: "paid", bookingStatus: "awaiting_review", createdAt: "2026-07-08T08:45:00.000Z" }
+  { id: "sample-1", guestName: "คุณมะลิ", phone: "081-234-5678", checkIn: "2026-07-18", checkOut: "2026-07-20", roomType: "Garden Deluxe", guests: 2, addOns: ["กาแฟในตอนเช้า"], note: "ขอห้องวิวสวน", depositAmount: 500, depositStatus: "verified", bookingStatus: "confirmed", createdAt: "2026-07-06T09:30:00.000Z" },
+  { id: "sample-2", guestName: "คุณอาทิตย์", phone: "089-222-1111", checkIn: "2026-07-22", checkOut: "2026-07-23", roomType: "Family Bungalow", guests: 4, addOns: ["เตียงเสริม"], note: "จะโอนมัดจำช่วงเย็น", depositAmount: 1000, depositStatus: "pending", bookingStatus: "new", createdAt: "2026-07-07T12:15:00.000Z" },
+  { id: "sample-3", guestName: "คุณกานต์", phone: "086-555-5555", checkIn: "2026-07-25", checkOut: "2026-07-27", roomType: "Standard Twin", guests: 2, addOns: ["กาแฟในตอนเช้า"], note: "ส่งสลิปทาง LINE แล้ว", depositAmount: 500, depositStatus: "paid", bookingStatus: "awaiting_review", createdAt: "2026-07-08T08:45:00.000Z" }
 ];
 
 const labels = {
@@ -102,10 +102,17 @@ export default function AdminPage() {
   }
 
   function exportCsv() {
-    const header = ["guestName", "phone", "checkIn", "checkOut", "roomType", "guests", "depositAmount", "depositStatus", "bookingStatus", "note"];
+    const header = ["guestName", "phone", "checkIn", "checkOut", "roomType", "guests", "addOns", "depositAmount", "depositStatus", "bookingStatus", "note"];
     const csv = [
       header.join(","),
-      ...filteredBookings.map((booking) => header.map((key) => `"${String(booking[key] ?? "").replaceAll('"', '""')}"`).join(","))
+      ...filteredBookings.map((booking) =>
+        header
+          .map((key) => {
+            const value = Array.isArray(booking[key]) ? booking[key].join(" | ") : booking[key];
+            return `"${String(value ?? "").replaceAll('"', '""')}"`;
+          })
+          .join(",")
+      )
     ].join("\n");
     const blob = new Blob([`\ufeff${csv}`], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -166,18 +173,19 @@ export default function AdminPage() {
 
             <div className="table-wrap" id="bookings">
               <table className="booking-table">
-                <thead><tr><th>ผู้จอง</th><th>วันที่เข้าพัก</th><th>ห้อง</th><th>มัดจำ</th><th>สถานะจอง</th><th>หมายเหตุ</th></tr></thead>
+                <thead><tr><th>ผู้จอง</th><th>วันที่เข้าพัก</th><th>ห้อง</th><th>บริการเสริม</th><th>มัดจำ</th><th>สถานะจอง</th><th>หมายเหตุ</th></tr></thead>
                 <tbody>
                   {filteredBookings.length ? filteredBookings.map((booking) => (
                     <tr key={booking.id}>
                       <td className="guest-cell"><strong>{booking.guestName}</strong><span>{booking.phone}</span><span>{booking.guests} ท่าน</span></td>
                       <td><strong>{formatDate(booking.checkIn)}</strong><div className="muted-text">ถึง {formatDate(booking.checkOut)}</div></td>
                       <td>{booking.roomType}</td>
+                      <td>{booking.addOns?.length ? booking.addOns.join(", ") : "-"}</td>
                       <td><span className={`status-pill status-${booking.depositStatus}`}>{labels[booking.depositStatus]}</span><div className="muted-text">{currency(booking.depositAmount)}</div><StatusSelect options={["pending", "paid", "verified"]} value={booking.depositStatus} onChange={(value) => updateBooking(booking.id, "depositStatus", value)} /></td>
                       <td><span className={`status-pill ${booking.bookingStatus === "cancelled" ? "status-cancelled" : "status-verified"}`}>{labels[booking.bookingStatus]}</span><StatusSelect options={["new", "awaiting_review", "confirmed", "checked_in", "cancelled"]} value={booking.bookingStatus} onChange={(value) => updateBooking(booking.id, "bookingStatus", value)} /></td>
                       <td>{booking.note || "-"}</td>
                     </tr>
-                  )) : <tr><td colSpan="6" className="muted-text">ยังไม่มีรายการตามเงื่อนไขที่เลือก</td></tr>}
+                  )) : <tr><td colSpan="7" className="muted-text">ยังไม่มีรายการตามเงื่อนไขที่เลือก</td></tr>}
                 </tbody>
               </table>
             </div>
