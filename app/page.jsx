@@ -15,7 +15,7 @@ const roomDeposits = {
 
 const addOnOptions = [
   "เตียงเสริม",
-  "กาแฟในตอนเช้า"
+  "กาแฟ"
 ];
 
 const initialForm = {

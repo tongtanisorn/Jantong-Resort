@@ -7,9 +7,9 @@ const STORAGE_KEY = "jantongBookings";
 const SESSION_KEY = "jantongAdminSession";
 
 const sampleBookings = [
-  { id: "sample-1", guestName: "คุณมะลิ", phone: "081-234-5678", checkIn: "2026-07-18", checkOut: "2026-07-20", roomType: "Garden Deluxe", guests: 2, addOns: ["กาแฟในตอนเช้า"], note: "ขอห้องวิวสวน", depositAmount: 500, depositStatus: "verified", bookingStatus: "confirmed", createdAt: "2026-07-06T09:30:00.000Z" },
+  { id: "sample-1", guestName: "คุณมะลิ", phone: "081-234-5678", checkIn: "2026-07-18", checkOut: "2026-07-20", roomType: "Garden Deluxe", guests: 2, addOns: ["กาแฟ"], note: "ขอห้องวิวสวน", depositAmount: 500, depositStatus: "verified", bookingStatus: "confirmed", createdAt: "2026-07-06T09:30:00.000Z" },
   { id: "sample-2", guestName: "คุณอาทิตย์", phone: "089-222-1111", checkIn: "2026-07-22", checkOut: "2026-07-23", roomType: "Family Bungalow", guests: 4, addOns: ["เตียงเสริม"], note: "จะโอนมัดจำช่วงเย็น", depositAmount: 1000, depositStatus: "pending", bookingStatus: "new", createdAt: "2026-07-07T12:15:00.000Z" },
-  { id: "sample-3", guestName: "คุณกานต์", phone: "086-555-5555", checkIn: "2026-07-25", checkOut: "2026-07-27", roomType: "Standard Twin", guests: 2, addOns: ["กาแฟในตอนเช้า"], note: "ส่งสลิปทาง LINE แล้ว", depositAmount: 500, depositStatus: "paid", bookingStatus: "awaiting_review", createdAt: "2026-07-08T08:45:00.000Z" }
+  { id: "sample-3", guestName: "คุณกานต์", phone: "086-555-5555", checkIn: "2026-07-25", checkOut: "2026-07-27", roomType: "Standard Twin", guests: 2, addOns: ["กาแฟ"], note: "ส่งสลิปทาง LINE แล้ว", depositAmount: 500, depositStatus: "paid", bookingStatus: "awaiting_review", createdAt: "2026-07-08T08:45:00.000Z" }
 ];
 
 const labels = {
