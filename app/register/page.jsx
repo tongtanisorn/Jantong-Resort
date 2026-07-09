@@ -7,6 +7,7 @@ import { getSupabaseBrowserClient, isSupabaseConfigured } from "../../lib/supaba
 
 const USERS_KEY = "jantongCustomers";
 const SESSION_KEY = "jantongCustomerSession";
+const AUTH_REDIRECT_ORIGIN = process.env.NEXT_PUBLIC_SITE_URL;
 
 function readUsers() {
   const saved = localStorage.getItem(USERS_KEY);
@@ -51,12 +52,13 @@ export default function RegisterPage() {
 
     if (isSupabaseConfigured()) {
       const supabase = getSupabaseBrowserClient();
+      const redirectOrigin = AUTH_REDIRECT_ORIGIN || window.location.origin;
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: { full_name: name, phone },
-          emailRedirectTo: `${window.location.origin}/login`
+          emailRedirectTo: `${redirectOrigin}/login`
         }
       });
 
@@ -84,9 +86,10 @@ export default function RegisterPage() {
   async function socialRegister(provider) {
     if (isSupabaseConfigured()) {
       const supabase = getSupabaseBrowserClient();
+      const redirectOrigin = AUTH_REDIRECT_ORIGIN || window.location.origin;
       await supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: `${window.location.origin}/#booking` }
+        options: { redirectTo: `${redirectOrigin}/#booking` }
       });
       return;
     }

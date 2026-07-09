@@ -7,6 +7,7 @@ import { getSupabaseBrowserClient, isSupabaseConfigured } from "../../lib/supaba
 
 const USERS_KEY = "jantongCustomers";
 const SESSION_KEY = "jantongCustomerSession";
+const AUTH_REDIRECT_ORIGIN = process.env.NEXT_PUBLIC_SITE_URL;
 
 function readUsers() {
   const saved = localStorage.getItem(USERS_KEY);
@@ -57,9 +58,10 @@ export default function LoginPage() {
   async function socialLogin(provider) {
     if (isSupabaseConfigured()) {
       const supabase = getSupabaseBrowserClient();
+      const redirectOrigin = AUTH_REDIRECT_ORIGIN || window.location.origin;
       await supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: `${window.location.origin}/#booking` }
+        options: { redirectTo: `${redirectOrigin}/#booking` }
       });
       return;
     }
