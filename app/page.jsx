@@ -208,13 +208,52 @@ export default function HomePage() {
         <section className="hero" aria-label="Jantong Resort">
           <img src="/assets/images/resort-lawn-hero.jpg" alt="บรรยากาศสนามหญ้าและบ้านพักของ Jantong Resort" className="hero-image" />
           <div className="hero-shade" />
-          <div className="hero-content">
-            <p className="eyebrow">รีสอร์ทธรรมชาติสำหรับวันพักผ่อน</p>
-            <h1>Jantong Resort</h1>
-            <p className="hero-copy">ห้องพักสะอาด เงียบสงบ ใกล้ธรรมชาติ พร้อมระบบจองออนไลน์และแจ้งมัดจำให้เจ้าของตรวจสอบได้ง่าย</p>
-            <div className="hero-actions">
-              <a className="button primary" href="#booking">จองห้องพัก</a>
-              <a className="button ghost" href="#rooms">ดูห้องพัก</a>
+          <div className="hero-inner">
+            <div className="hero-content">
+              <div className="hero-badge">
+                <span className="hero-badge-dot" aria-hidden="true">JR</span>
+                <span>เปิดจองทั้ง <strong>ชั่วคราว</strong> และ <strong>ค้างคืน</strong></span>
+              </div>
+              <p className="eyebrow">รีสอร์ทธรรมชาติสำหรับวันพักผ่อน</p>
+              <h1>Jantong <em>Resort</em></h1>
+              <p className="hero-copy">ห้องพักสะอาด เงียบสงบ ใกล้ธรรมชาติ พร้อมระบบจองออนไลน์ สแกน QR มัดจำ และให้เจ้าของตรวจสอบหลังบ้านได้ง่าย</p>
+              <div className="hero-actions">
+                <a className="button primary" href="#booking">จองห้องพัก</a>
+                <a className="button ghost" href="#rooms">ดูห้องพัก</a>
+              </div>
+              <div className="hero-trust" aria-label="จุดเด่นของรีสอร์ท">
+                <span>บ้านพักเป็นหลัง</span>
+                <span>เรือนแถว 4 ห้อง</span>
+                <span>QR มัดจำ PromptPay</span>
+              </div>
+            </div>
+
+            <div className="hero-visual" aria-label="สรุปราคาห้องพัก">
+              <div className="booking-preview">
+                <div className="preview-bar">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+                <div className="preview-body">
+                  <p className="preview-label">วันนี้ที่จันทร์ทอง</p>
+                  <h2>เลือกห้องแล้วจองได้ทันที</h2>
+                  <div className="preview-grid">
+                    <div>
+                      <strong>฿250</strong>
+                      <span>ชั่วคราว 3 ชม.</span>
+                    </div>
+                    <div>
+                      <strong>฿600</strong>
+                      <span>บ้านพักหลัง 1-2</span>
+                    </div>
+                    <div>
+                      <strong>฿700</strong>
+                      <span>บ้านพักหลัง 3-4</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -225,15 +264,27 @@ export default function HomePage() {
           <div><strong>LINE</strong><span>ยืนยันการโอนรวดเร็ว</span></div>
         </section>
 
+        <section className="ticker-section" aria-label="บริการหลัก">
+          <div className="ticker-label">Jantong Resort Services</div>
+          <div className="ticker-track">
+            {["จองห้องออนไลน์", "สแกน QR มัดจำ", "บ้านพักค้างคืน", "เรือนแถวชั่วคราว", "แผนที่ Google Maps", "หลังบ้านเจ้าของ"].map((item) => (
+              <span className="ticker-item" key={item}>{item}</span>
+            ))}
+            {["จองห้องออนไลน์", "สแกน QR มัดจำ", "บ้านพักค้างคืน", "เรือนแถวชั่วคราว", "แผนที่ Google Maps", "หลังบ้านเจ้าของ"].map((item) => (
+              <span className="ticker-item" key={`${item}-repeat`}>{item}</span>
+            ))}
+          </div>
+        </section>
+
         <section className="section intro-section">
           <div className="section-heading">
             <p className="eyebrow">พักง่าย ดูแลง่าย</p>
             <h2>เว็บรีสอร์ทที่พร้อมรับลูกค้าและช่วยเจ้าของจัดการหลังบ้าน</h2>
           </div>
           <div className="feature-grid">
-            <article><span className="feature-icon">✓</span><h3>จองออนไลน์</h3><p>ลูกค้าส่งข้อมูลวันเข้าพัก จำนวนคน และช่องทางติดต่อได้ทันที</p></article>
-            <article><span className="feature-icon">฿</span><h3>ติดตามมัดจำ</h3><p>หลังบ้านแสดงสถานะรอโอน โอนแล้ว และยืนยันแล้วอย่างชัดเจน</p></article>
-            <article><span className="feature-icon">↗</span><h3>พร้อมทำ SEO</h3><p>มีโครง meta, schema, sitemap และเนื้อหาที่ Google อ่านได้</p></article>
+            <article><span className="feature-icon">01</span><h3>จองออนไลน์</h3><p>ลูกค้าส่งข้อมูลวันเข้าพัก จำนวนคน และช่องทางติดต่อได้ทันที</p></article>
+            <article><span className="feature-icon">02</span><h3>ติดตามมัดจำ</h3><p>หลังบ้านแสดงสถานะรอโอน โอนแล้ว และยืนยันแล้วอย่างชัดเจน</p></article>
+            <article><span className="feature-icon">03</span><h3>พร้อมทำ SEO</h3><p>มีโครง meta, schema, sitemap และเนื้อหาที่ Google อ่านได้</p></article>
           </div>
         </section>
 
@@ -358,7 +409,7 @@ export default function HomePage() {
       </main>
 
       <footer className="site-footer">
-        <p>© 2026 Jantong Resort. All rights reserved.</p>
+        <p>© 2026 Jantong Resort. Design adapted from TemplateMo Clearwave.</p>
         <div className="footer-links">
           <Link href="/login">Customer Login</Link>
           <Link href="/admin">Owner Login</Link>
